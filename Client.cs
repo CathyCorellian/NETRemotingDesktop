@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace NETRemotingDesktop
@@ -19,13 +20,14 @@ namespace NETRemotingDesktop
             form.MouseDown += (s, e) => common.MouseDownUp(e.Button, false);
             form.MouseUp += (s, e) => common.MouseDownUp(e.Button, true);
             form.MouseMove += (s, e) => common.SetCursorPostion((float)e.X / form.ClientRectangle.Width, (float)e.Y / form.ClientRectangle.Height);
-            new Timer() { Interval = 500, Enabled = true }.Tick += (s, e) =>
+            new Thread(x =>
             {
-                using (var m = common.GetScreenBitmapBytes())
-                using (var img = Image.FromStream(m))
-                using (var g = form.CreateGraphics())
-                    g.DrawImage(img, form.ClientRectangle);
-            };
+                for (; true; Thread.Sleep(300))
+                    using (var m = common.GetScreenBitmapBytes())
+                    using (var i = Image.FromStream(m))
+                    using (var g = form.CreateGraphics())
+                        form.Invoke(new MethodInvoker(delegate { g.DrawImage(i, form.ClientRectangle); }));
+            }).Start();
             form.ShowDialog();
         }
     }
